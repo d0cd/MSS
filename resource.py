@@ -12,6 +12,7 @@ class ResourceType(Enum):
 
 
 class Resource:
+    """A class representing an actual resource, e.g ARMv7 CPU"""
     name: str
     typ: ResourceType
     active: Dict[Tuple[str, str], Tuple[float, int]]
@@ -80,7 +81,27 @@ class Resource:
         return min(finish_times)
 
 
+# TODO: At the moment, this is really only a named array, more functionality will be added later
 class ResourcePool:
-    pass
+    """A pool of resources of a single type."""
+    name: str
+    typ: ResourceType
+    resources: List[Resource]
 
+    def __init__(self, _name: str, _typ: ResourceType, _resources: List[Resource]=[]):
+        for r in _resources:
+            assert _typ == r.typ, "Resource types must all be the same."
+        self.name = _name
+        self.typ = _typ
+        self.resources = _resources
+
+    def __getitem__(self, item: int):
+        return self.resources[item]
+
+    def __iter__(self):
+        self._resource_iter = iter(self.resources)
+        return self
+
+    def __next__(self):
+        return next(self._resource_iter)
 

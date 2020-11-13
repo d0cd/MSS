@@ -1,7 +1,7 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from networkx import DiGraph, is_directed_acyclic_graph, topological_sort
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 
 from runtime import Runtime
 
@@ -12,7 +12,7 @@ class Function:
     """Class for defining a function, its required resources, execution time, etc."""
     unique_id: str                            # We need this to refer to individual functions in our DAG
     request_time: int                         # Time the request arrives into our system
-    resources: Dict[str, Dict[str, Runtime]]  # Resources and accompanying that this function can run on
+    resources: Dict[str, Dict[str, Union[Runtime, float]]]  # Resources and accompanying that this function can run on
 
 
 class Dag:

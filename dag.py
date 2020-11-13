@@ -1,12 +1,13 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from networkx import DiGraph, is_directed_acyclic_graph, topological_sort
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from runtime import Runtime
 
 @dataclass
 # TODO: If function logic starts getting complicated, then we should move this to a different file
+# TODO: Need to figure out a way to add in resource footprints
 class Function:
     """Class for defining a function, its required resources, execution time, etc."""
     unique_id: str                            # We need this to refer to individual functions in our DAG
@@ -18,12 +19,15 @@ class Dag:
     """Class for describing DAGs of functions."""
     name: str
     functions: Dict[str, Function]
+    slo: Optional[int]
     graph: DiGraph
     sealed: bool
 
-    def __init__(self, _name: str, funs: List[Function]=[]):
+    # TODO: SLOs are just defined as ints for now, need to figure out what they look like
+    def __init__(self, _name: str, funs: List[Function]=[], _slo: Optional[int] = None):
         self.name = _name
         self.functions = {}
+        self.slo = _slo
         self.graph = DiGraph()
         for fun in funs:
             self.add_function(fun)

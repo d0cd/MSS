@@ -51,16 +51,23 @@ linear_third = Function(     # This function takes a long time to run on a GPU
 		transfer_into_gpu_time=1,
 		next_functions=[],
 	)
-id_function_map = Dag([linear_first, linear_second, linear_third])
-id_function_map.sanity_check()
+id_function_map = {
+	'linear_first' : linear_first,
+	'linear_second': linear_second,
+	'linear_third' : linear_third
+}
 
 
+# This function gets all of the starting functions and resource available to the system
 def get_start_functions_resources():
-	linear_dag = 'linear_first' # Starting function; TODO: We want to keep track of latency for this DAG
-	branch_dag = 'branch_first'
+	linear_dag = Dag([linear_first, linear_second, linear_third])
+	linear_dag.sanity_check()
+	linear_dag_start = 'linear_first' # Starting function; TODO: We want to keep track of latency for this DAG
+	branch_dag_start = 'branch_first'
 
 	all_dags       = [linear_dag] # branch_dag, etc. will also go here
-	next_functions = [id_function_map[dag] for dag in all_dags]
+	all_starts     = [linear_dag_start]
+	next_functions = [id_function_map[start] for start in all_starts]
 	next_functions.sort(key=lambda function: function.request_time)
 
 	resources = Resources( # 1 CPU, 1 GPU

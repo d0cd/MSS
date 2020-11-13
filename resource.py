@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Optional
+
 import sys
 
 from dag import Function
@@ -8,11 +9,11 @@ from runtime import Runtime
 
 class ResourceType(Enum):
     CPU = 1
-    GPU = 1
+    GPU = 2
 
 
 class Resource:
-    """A class representing an actual resource, e.g ARMv7 CPU"""
+    """A class representing an actual resource, e.g ARMv7_CPU"""
     name: str
     typ: ResourceType
     active: Dict[Tuple[str, str], Tuple[float, int]]
@@ -47,11 +48,13 @@ class Resource:
             "Function needs to define the amount of space it needs on this resource."
         assert 'execute' in fun.resources[self.name], \
             "Function needs to define the amount of time it takes to execute on this resource."
-        needed_space = fun.resources[self.name]['space']
-        if self.available_space >= needed_space:
-            return True
-        else:
-            return False
+        assert 'type' in fun.resources[self.name], \
+            "Function needs to define the type of the resource it needs"
+        if fun.resources['type'] == self.typ:
+            needed_space = fun.resources[self.name]['space']
+            if self.available_space >= needed_space:
+                return True
+        return False
 
     def remove_function(self, fun: Function, tag: str, curr_time: int):
         fname = fun.unique_id
@@ -81,21 +84,22 @@ class Resource:
         return min(finish_times)
 
 
-# TODO: At the moment, this is really only a named array, more functionality will be added later
 class ResourcePool:
     """A pool of resources of a single type."""
     name: str
     typ: ResourceType
-    resources: List[Resource]
+    resources: Dict[str, Resource]
 
-    def __init__(self, _name: str, _typ: ResourceType, _resources: List[Resource]=[]):
-        for r in _resources:
-            assert _typ == r.typ, "Resource types must all be the same."
+    def __init__(self, _name: str, _typ: ResourceType, _resources: List[Tuple[str, Resource]]=[]):
         self.name = _name
         self.typ = _typ
-        self.resources = _resources
+        self.resources = {}
+        for (name, r) in _resources:
+            assert _typ == r.typ, "Resource types must all be the same."
+            assert name not in self.resources, "Each resource must have a unique identifier"
+            self.resources[name] = r
 
-    def __getitem__(self, item: int):
+    def __getitem__(self, item: str):
         return self.resources[item]
 
     def __iter__(self):
@@ -105,3 +109,18 @@ class ResourcePool:
     def __next__(self):
         return next(self._resource_iter)
 
+    def get_all_resources(self) -> List[Resource]:
+        return self.resources.values()
+
+    def find_available_resources(self, fun: Function, tag: str) -> List[Tuple[str, Resource]]:
+        available = []
+        for k, v in self.resources.items():
+            if v.name in fun.resources and v.can_add_function(fun, tag):
+                available.append((k, v))
+        return available
+
+    def find_first_available_resource(self, fun: Function, tag: str) -> Optional[Tuple[str, Resource]]:
+        for k, v in self.resources.items():
+            if v.name in fun.resources and v.can_add_function(fun, tag):
+                return (k, v)
+        return None

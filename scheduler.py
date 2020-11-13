@@ -6,8 +6,8 @@ Known Issues:
  - GPU cold/warm starts
 '''
 
-from resource import ResourceType
-from dag import Function, Dag
+from simulator.resource import ResourceType
+from simulator.dag import Function, Dag
 
 from collections import namedtuple, deque
 from typing import List

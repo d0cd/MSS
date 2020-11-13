@@ -3,18 +3,15 @@ from dataclasses import dataclass
 from networkx import DiGraph, is_directed_acyclic_graph, topological_sort
 from typing import List, Dict, Optional, Union
 
-from runtime import Runtime
 
 @dataclass
 # TODO: If function logic starts getting complicated, then we should move this to a different file
-# TODO: Need to figure out a way to add in resource footprints
 class Function:
     """Class for defining a function, its required resources, execution time, etc."""
     unique_id: str                            # We need this to refer to individual functions in our DAG
-    request_time: int                         # Time the request arrives into our system
-    resources: Dict[str, Dict[str, Dict]]     # Resources and accompanying that this function can run on
+    resources: Dict[str, Dict]                # Resources and accompanying information that this function can run on
 
-
+# TODO: Maybe have dags contain functions
 class Dag:
     """Class for describing DAGs of functions."""
     name: str
@@ -29,9 +26,9 @@ class Dag:
         self.functions = {}
         self.slo = _slo
         self.graph = DiGraph()
+        self.sealed = False
         for fun in funs:
             self.add_function(fun)
-        self.sealed = False
 
     def __contains__(self, index: str) -> bool:
         return index in self.functions
@@ -45,11 +42,13 @@ class Dag:
         self.functions[fun.unique_id] = fun
         self.graph.add_node(fun.unique_id)
 
-    def add_edge(self, fun1_unique_id: str, fun2_unique_id: str):
+    def add_edge(self, fun1: Function, fun2: Function):
         assert not self.sealed, "Tried to add edge after DAG was sealed."
-        assert fun1_unique_id in self.functions
-        assert fun2_unique_id in self.functions
-        self.graph.add_edge(fun1_unique_id, fun2_unique_id)
+        if fun1.unique_id not in self.functions:
+            self.add_function(fun1)
+        if fun2.unique_id not in self.functions:
+            self.add_function(fun2)
+        self.graph.add_edge(fun1.unique_id, fun2.unique_id)
 
     def sanity_check(self):
         # Check that all nodes are present
@@ -75,10 +74,24 @@ class Dag:
     def execute(self):
         self.sealed = True
         sorted_uids = topological_sort(self.graph)
-        self._order = map(lambda uid: self.functions[uid], sorted_uids)
+        self._order = list(map(lambda uid: self.functions[uid], sorted_uids))
+        self._pos = 0
 
-    def next_function(self):
-        return next(self._order, None)
+    def next_function(self) -> Optional[Function]:
+        if self.has_next_function():
+            self._pos += 1
+            return self._order[self._pos - 1]
+        else:
+            return None
+
+    def has_next_function(self) -> bool:
+        return self._pos < len(self._order)
+
+    def peek_next_function(self) -> Optional[Function]:
+        if self.has_next_function():
+            return self._order[self._pos]
+        else:
+            return None
 
 
 

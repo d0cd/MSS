@@ -3,8 +3,8 @@ from typing import Dict, Tuple, List, Optional
 
 import sys
 
-from dag import Function
-from runtime import Runtime
+from .dag import Function
+from .runtime import Runtime
 
 
 class ResourceType(Enum):
@@ -31,11 +31,12 @@ class Resource:
         needed_space = fun.resources[self.name]['space']
         if self.can_add_function(fun, tag):
             self.available_space -= needed_space
-            rt: Runtime = fun.resources[self.name]['execute']
+            rt: Runtime = fun.resources[self.name]['exec']
             finish_time = curr_time + rt.get_runtime(*args, **kwargs)
             self.active[(fun.unique_id, tag)] = (needed_space, finish_time)
             if finish_time < self.nearest_finish:
                 self.nearest_finish = finish_time
+            print(self.active)
             return True
         else:
             return False
@@ -46,11 +47,11 @@ class Resource:
         assert self.name in fun.resources, f"Function: {fun.unique_id} cannot be scheduled on this resource"
         assert 'space' in fun.resources[self.name], \
             "Function needs to define the amount of space it needs on this resource."
-        assert 'execute' in fun.resources[self.name], \
+        assert 'exec' in fun.resources[self.name], \
             "Function needs to define the amount of time it takes to execute on this resource."
         assert 'type' in fun.resources[self.name], \
             "Function needs to define the type of the resource it needs"
-        if fun.resources['type'] == self.typ:
+        if fun.resources[self.name]['type'] == self.typ:
             needed_space = fun.resources[self.name]['space']
             if self.available_space >= needed_space:
                 return True
@@ -69,8 +70,8 @@ class Resource:
         return removed_functions
 
     def __remove_helper(self, fname: str, tag: str, curr_time: int):
-        assert curr_time >= self.active[fname][1], "Function execution must finish before removal."
-        assert fname in self.active, f"Function {fname} is not allocated on this resource"
+        assert (fname, tag) in self.active, f"Function {fname} is not allocated on this resource"
+        assert curr_time >= self.active[(fname, tag)][1], "Function execution must finish before removal."
         (freed_space, finish_time) = self.active.pop((fname, tag))
         self.available_space += freed_space
         assert 0.0 <= self.available_space <= 100.0, "Avaailable space must always represent a percentage."
@@ -81,7 +82,7 @@ class Resource:
         finish_times = []
         for k, v in self.active.items():
             finish_times.append(v[1])
-        return min(finish_times)
+        return min(finish_times, default=-1)
 
 
 class ResourcePool:

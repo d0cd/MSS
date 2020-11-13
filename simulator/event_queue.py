@@ -3,7 +3,7 @@ from copy import deepcopy
 from itertools import groupby
 from typing import Deque, List, Tuple, Optional, Set, Any
 
-from dag import Dag
+from .dag import Dag
 
 
 class EventQueue:
@@ -25,7 +25,7 @@ class EventQueue:
         sorted_invocations = sorted(all_invocations, key=lambda t: t[0])
         last_time = 0  # 0ms
         for time, group in groupby(sorted_invocations, lambda t: t[0]):
-            events = set(map(lambda t: (t[1], t[2])))
+            events = set(map(lambda t: (t[1], t[2]), group))
             self._queue.append((events, time, time - last_time))
 
     def get_next_event(self) -> Optional[Tuple[Set, int, int]]:
@@ -41,4 +41,4 @@ class EventQueue:
 
     def has_more_events(self) -> bool:
         """Check for any events left."""
-        return len(self._queue) != 0
+        return len(self._queue) > 0

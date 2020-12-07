@@ -19,9 +19,10 @@ class IOLatency(Enum):
 
 class Node:
 
-	def __init__(self, first_type):
-		self.resource_type = first_type
-		self.memory = first_type.value[1]
+	def __init__(self, id, resource_type):
+		self.id = id
+		self.resource_type = resource_type
+		self.memory = resource_type.value[1]
 
 
 class Cluster:
@@ -32,11 +33,10 @@ class Cluster:
 
 class Function:
 
-	def __init__(self, id, runtimes, max_memory, memory_sent, prev_funcs=set(), next_funcs=set()):
+	def __init__(self, id, runtimes, max_memory, prev_funcs=set(), next_funcs=set()):
 		self.id = id
 		self.runtimes = runtimes
 		self.max_memory = max_memory
-		self.memory_sent = memory_sent
 		self.prev_funcs = prev_funcs
 		self.next_funcs = next_funcs
 
@@ -78,19 +78,6 @@ class Placement:
 		self.cluster = cluster
 		self.dag = dag
 		self.dag_instances = FunctionInstance(dag.root)
-
-
-		incomplete_map = {}
-		ready_queue = []
-		for function in dag.root.next_funcs:
-			temp_set = set()
-			temp_set.add(self.dag_instances)
-			temp_instance = FunctionInstance(function, prev_instances=temp_set)
-			ready_queue.append(temp_instance)
-
-		while len(ready_queue) > 0:
-			next_instance = ready_queue.pop(0)
-			for function in next_instance
 
 
 

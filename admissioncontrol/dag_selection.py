@@ -11,6 +11,12 @@ class Resource(Enum):
 	GPU = [3, 20]
 
 
+class IOLatency(Enum):
+	CPU = 3
+	GPU = 9
+	Network = 1
+
+
 class Node:
 
 	def __init__(self, first_type):
@@ -26,16 +32,36 @@ class Cluster:
 
 class Function:
 
-	def __init__(self, runtimes, max_memory, is_root=False, is_leaf=False, prev_funcs=[], next_funcs=[]):
+	def __init__(self, id, runtimes, max_memory, memory_sent, prev_funcs=set(), next_funcs=set()):
+		self.id = id
 		self.runtimes = runtimes
 		self.max_memory = max_memory
-		self.is_root = is_root
-		self.is_leaf = is_leaf
+		self.memory_sent = memory_sent
 		self.prev_funcs = prev_funcs
 		self.next_funcs = next_funcs
 
 	def get_resource_runtime(self, resource):
 		return self.runtimes[resource]
+
+
+class FunctionInstance:
+
+	def __init__(self, function, prev_instances=set(), next_instances=set(), node=None):
+		self.function = function
+		self.prev_instances = prev_instances
+		self.next_instances = next_instances
+		self.node = node
+		self.evaluated = False
+		self.accessible = False
+
+	def set_accessible(self):
+		for instance in self.prev_instances:
+			if not instance.evaluated:
+				self.accessible = False
+				return False
+
+		self.accessible = True
+		return True
 
 
 class DAG:
@@ -44,28 +70,6 @@ class DAG:
 		self.root = root
 		self.max_time = max_time
 		self.max_cost = max_cost
-		self.valid_placements = []
-		self.all_functions = []
-		seen_set = set()
-		curr_set = set()
-		curr_set.add(self.root)
-
-
-		while len(curr_set) > 0:
-			self.all_functions.append(curr_set.copy())
-
-			seen_set = seen_set.union(curr_set)
-
-			curr_list = list(curr_set)
-			new_curr_set = set()
-			for function in curr_list:
-				temp_next = list(function.next_funcs)
-				for next_func in temp_next:
-					temp_prev = next_func.prev_funcs
-					if len(temp_prev.difference(seen_set)) == 0:
-						new_curr_set.add(next_func)
-
-			curr_set = new_curr_set
 
 
 class Placement:
@@ -73,19 +77,23 @@ class Placement:
 	def __init__(self, cluster, dag):
 		self.cluster = cluster
 		self.dag = dag
-		self.func_place = []
-		for batch in dag.all_functions:
-			batch_map = {}
-			batch_list = list(batch)
-			for function in batch_list:
-				batch_map[function] = None
+		self.dag_instances = FunctionInstance(dag.root)
 
-			self.func_place.append(batch_map)
 
-	def place_copy(self):
-		new_place = Placement(self.cluster, self.dag)
-		for i in range(len(self.func_place)):
-			for function, place in self.func_place[i]:
-				new_place.func_place[i][function] = place
+		incomplete_map = {}
+		ready_queue = []
+		for function in dag.root.next_funcs:
+			temp_set = set()
+			temp_set.add(self.dag_instances)
+			temp_instance = FunctionInstance(function, prev_instances=temp_set)
+			ready_queue.append(temp_instance)
 
-		return new_place
+		while len(ready_queue) > 0:
+			next_instance = ready_queue.pop(0)
+			for function in next_instance
+
+
+
+def gen_valid_placements(cluster, dag):
+
+

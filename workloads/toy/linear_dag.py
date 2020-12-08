@@ -7,16 +7,16 @@ linear_first = Function(
 	resources= {
 		'STD_CPU' : {
 			'type' : ResourceType.CPU,
-			'space': 0.0,  # Ignoring space this function requires on the CPU
+			'space': 100.0,  # Ignoring space this function requires on the CPU
 			'pre'  : ConstantTime(1),
 			'exec' : ConstantTime(3),
 			'post' : ConstantTime(0)
 		},
 		'STD_GPU' : {
 			'type' : ResourceType.GPU,
-			'space': 0.0,
+			'space': 100.0,
 			'pre'  : ConstantTime(1),
-			'exec' : ConstantTime(1),
+			'exec' : ConstantTime(2),
 			'post' : ConstantTime(0)
 		}
 	}
@@ -27,14 +27,14 @@ linear_second = Function(    # This function takes a long time to run on a CPU
 	resources= {
 		'STD_CPU' : {
 			'type' : ResourceType.CPU,
-			'space': 0.0,  # Ignoring space this function requires on the CPU
+			'space': 100.0,  # Ignoring space this function requires on the CPU
 			'pre'  : ConstantTime(1),
 			'exec' : ConstantTime(5),
 			'post' : ConstantTime(0)
 		},
 		'STD_GPU' : {
 			'type' : ResourceType.GPU,
-			'space': 0.0,
+			'space': 100.0,
 			'pre'  : ConstantTime(1),
 			'exec' : ConstantTime(1),
 			'post' : ConstantTime(0)
@@ -47,14 +47,14 @@ linear_third = Function(     # This function takes a long time to run on a GPU
 	resources= {
 		'STD_CPU' : {
 			'type' : ResourceType.CPU,
-			'space': 0.0,  # Ignoring space this function requires on the CPU
+			'space': 100.0,  # Ignoring space this function requires on the CPU
 			'pre'  : ConstantTime(1),
 			'exec' : ConstantTime(1),
 			'post' : ConstantTime(0)
 		},
 		'STD_GPU' : {
 			'type' : ResourceType.GPU,
-			'space': 0.0,
+			'space': 100.0,
 			'pre'  : ConstantTime(1),
 			'exec' : ConstantTime(5),
 			'post' : ConstantTime(0)

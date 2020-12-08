@@ -10,4 +10,4 @@ def gen_simple_workload(path_to_invocations, number_of_functions):
 
 
 if __name__ == "__main__":
-    gen_simple_workload('./azurefunctions-dataset2019/', 10)
+    gen_simple_workload('azurefunctions-dataset2019/', 10)

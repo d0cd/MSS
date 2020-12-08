@@ -24,7 +24,7 @@ class System:
     def run(self, *args, **kwargs) -> int:
         while self.events.has_more_events():
             (invocations, absolute_time, elapsed_time) = self.events.get_next_event()
-            for _ in range(0, max(0, elapsed_time - 1)):
+            for _ in range(0, max(0, elapsed_time)):
                 self.schedule(self.time, set(), *args, **kwargs)
                 self.time += 1
             assert self.time == absolute_time, "The time should have been accurately stepped to current time"

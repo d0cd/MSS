@@ -31,12 +31,13 @@ class Resource:
         needed_space = fun.resources[self.name]['space']
         if self.can_add_function(fun, tag):
             self.available_space -= needed_space
-            rt: Runtime = fun.resources[self.name]['exec']
-            finish_time = curr_time + rt.get_runtime(*args, **kwargs)
+            pre_rt: Runtime = fun.resources[self.name]['pre']
+            exec_rt: Runtime = fun.resources[self.name]['exec']
+            post_rt: Runtime = fun.resources[self.name]['post']
+            finish_time = curr_time + pre_rt.get_runtime(*args, **kwargs) + exec_rt.get_runtime(*args, **kwargs) + post_rt.get_runtime(*args, **kwargs)
             self.active[(fun.unique_id, tag)] = (needed_space, finish_time)
-            if finish_time < self.nearest_finish:
-                self.nearest_finish = finish_time
-            print(self.active)
+            self.nearest_finish = self.__find_nearest_finish()
+            print(f"Added resource: {tag} at time: {curr_time} on resource: {self.name}")
             return True
         else:
             return False

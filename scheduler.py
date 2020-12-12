@@ -6,31 +6,16 @@ Known Issues:
  - GPU cold/warm starts
 '''
 
+from simulator.resource import ResourceType
+from simulator.dag import Function, Dag
 
 from collections import namedtuple, deque
-from enum import Enum
 from typing import List
 
 RUNNING_TIME = 100
 NUM_CPUS = 1
 NUM_GPUS = 1
 
-
-class ResourceType(Enum):
-	CPU = 1
-	GPU = 2
-
-Function = namedtuple('Function', 
-	[
-		'unique_id',              # We need this to refer to individual functions in our DAG
-		'request_time',           # Time the request arrives into our system
-		'cpu_time',               # Time in CPU
-		'transfer_into_cpu_time', # Transfer from previous function's GPU into our CPU (else 0)
-		'gpu_time',               # Time in GPU
-		'transfer_into_gpu_time', # Transfer from previous function's CPU into our GPU (else 0)
-		'next_functions',         # List of subsequent unique_id's if more functions in DAG 
-	]
-)
 ResourceQueue = namedtuple('ResourceQueue', ['queue', 'transferring', 'wait_time'])
 Resources = namedtuple('Resources', 
 	[
@@ -39,43 +24,50 @@ Resources = namedtuple('Resources',
 	]
 )
 
-id_function_map = {
-	'linear_first': Function(
-		unique_id='linear_first', 
-		request_time=0, 
-		cpu_time=3, 
-		transfer_into_cpu_time=0, 
-		gpu_time=3, 
+linear_first = Function(
+		unique_id='linear_first',
+		request_time=0,
+		cpu_time=3,
+		transfer_into_cpu_time=0,
+		gpu_time=3,
 		transfer_into_gpu_time=1,
 		next_functions=['linear_second'],
-	),
-	'linear_second': Function(    # This function takes a long time to run on a CPU
-		unique_id='linear_second', 
+	)
+linear_second = Function(    # This function takes a long time to run on a CPU
+		unique_id='linear_second',
 		request_time=-1,          # Doesn't matter since it's always after linear_first
-		cpu_time=5, 
-		transfer_into_cpu_time=1, 
-		gpu_time=1, 
+		cpu_time=5,
+		transfer_into_cpu_time=1,
+		gpu_time=1,
 		transfer_into_gpu_time=1,
 		next_functions=['linear_third'],
-	),
-	'linear_third': Function(     # This function takes a long time to run on a GPU
-		unique_id='linear_third', 
+	)
+linear_third = Function(     # This function takes a long time to run on a GPU
+		unique_id='linear_third',
 		request_time=-1,          # Doesn't matter since it's always after linear_second
-		cpu_time=1, 
-		transfer_into_cpu_time=1, 
-		gpu_time=5, 
+		cpu_time=1,
+		transfer_into_cpu_time=1,
+		gpu_time=5,
 		transfer_into_gpu_time=1,
 		next_functions=[],
 	)
+id_function_map = {
+	'linear_first' : linear_first,
+	'linear_second': linear_second,
+	'linear_third' : linear_third
 }
 
 
+# This function gets all of the starting functions and resource available to the system
 def get_start_functions_resources():
-	linear_dag = 'linear_first' # Starting function; TODO: We want to keep track of latency for this DAG
-	branch_dag = 'branch_first'
+	linear_dag = Dag([linear_first, linear_second, linear_third])
+	linear_dag.sanity_check()
+	linear_dag_start = 'linear_first' # Starting function; TODO: We want to keep track of latency for this DAG
+	branch_dag_start = 'branch_first'
 
 	all_dags       = [linear_dag] # branch_dag, etc. will also go here
-	next_functions = [id_function_map[dag] for dag in all_dags]
+	all_starts     = [linear_dag_start]
+	next_functions = [id_function_map[start] for start in all_starts]
 	next_functions.sort(key=lambda function: function.request_time)
 
 	resources = Resources( # 1 CPU, 1 GPU

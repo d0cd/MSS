@@ -29,9 +29,9 @@ class ClockworkWorker:
     # Each worker runs a dedicated executor for each action type
     # Each executor is pinned to a core so they can all run concurrently
     # The PQ elements are (earliest time Action can exec, Action, time received by worker)
-    loadRequestQueue: PriorityQueue[Tuple[int, Action, int]]
-    inferRequestQueue: PriorityQueue[Tuple[int, Action, int]]
-    unloadRequestQueue: PriorityQueue[Tuple[int, Action, int]]
+    loadRequestQueue: PriorityQueue
+    inferRequestQueue: PriorityQueue
+    unloadRequestQueue: PriorityQueue
 
     loadExecutor: LoadExecutor
     inferExecutor: InferExecutor

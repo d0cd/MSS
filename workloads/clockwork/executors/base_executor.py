@@ -7,12 +7,12 @@ from typing import Tuple, Optional
 
 class Executor:
     name: str
-    requestQueue: PriorityQueue[Tuple[int, Action, int]]
+    requestQueue: PriorityQueue
     resource: Resource
     timeLeft: int
     currentAction: Optional[Action]
 
-    def __init__(self, _name: str, _requestQueue: PriorityQueue[Tuple[int, Action, int]]):
+    def __init__(self, _name: str, _requestQueue: PriorityQueue):
         self.name = _name
         self.requestQueue = _requestQueue
         self.clock = 0

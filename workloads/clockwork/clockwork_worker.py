@@ -74,5 +74,11 @@ class ClockworkWorker:
         else:
             raise AssertionError(f"Action type: {action.type} is not explicitly allowed.")
 
+    def get_usage_stats(self):
+        return self.inferExecutor.get_usage_stats()
+
+    def get_lru_model_name(self):
+        return self.inferExecutor.get_lru_model_name()
+
 
 

@@ -70,6 +70,14 @@ class Resource:
                 removed_functions.append(k)
         return removed_functions
 
+    def is_allocated(self, fun: Function, tag: str) -> bool:
+        fname = fun.unique_id
+        return (fname, tag) in self.active
+
+    def reserve_space(self, space: float):
+        assert self.available_space >= space, "Not enough space to reserve."
+        self.available_space -= space
+
     def __remove_helper(self, fname: str, tag: str, curr_time: int):
         assert (fname, tag) in self.active, f"Function {fname} is not allocated on this resource"
         assert curr_time >= self.active[(fname, tag)][1], "Function execution must finish before removal."

@@ -16,14 +16,18 @@ class EventQueue:
         self._queue = deque()
 
         # Add all dags to a big array
+        # TODO: This appears to be a bottleneck
+        print("Collecting all invocations...")
         all_invocations = []
         for (dag, invoc_input) in dags:
             for (t, input) in invoc_input:
                 all_invocations.append((t, deepcopy(dag), input))
 
         # Sort, process, and add elements to queue
+        print("Sorting invocations...")
         sorted_invocations = sorted(all_invocations, key=lambda t: t[0])
         last_time = 0  # 0ms
+        print("Grouping invocations...")
         for time, group in groupby(sorted_invocations, lambda t: t[0]):
             events = set(map(lambda t: (t[1], t[2]), group))
             self._queue.append((events, time, time - last_time))
@@ -36,6 +40,14 @@ class EventQueue:
         """
         if self.has_more_events():
             return self._queue.popleft()
+        else:
+            return None
+
+    def peek(self) -> Optional[Tuple[Set, int, int]]:
+        if self.has_more_events():
+            first = self._queue.popleft()
+            self._queue.appendleft(first)
+            return first
         else:
             return None
 

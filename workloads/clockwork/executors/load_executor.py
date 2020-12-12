@@ -13,7 +13,7 @@ class LoadExecutor(Executor):
     models: Dict[str, Function]
     actionRecieved: int  # When was the current action received
 
-    def __init__(self, _workerId: int, _requestQueue: PriorityQueue[Tuple[int, Action, int]], _resource: Resource, _models: Dict[str, Function]):
+    def __init__(self, _workerId: int, _requestQueue: PriorityQueue, _resource: Resource, _models: Dict[str, Function]):
         super().__init__(f"Worker:{_workerId}:LoadExecutor", _requestQueue)
         self.workerId = _workerId
         self.resource = _resource

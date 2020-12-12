@@ -50,4 +50,15 @@ class Result:
         self.message = _msg
 
 
+class InferenceRequest:
+    modelName: str
+    batchSize: int
+    sloFactor: int
+
+    def __init__(self, _modelName: str, _batchSize: int, _sloFactor: int):
+        self.modelName = _modelName
+        self.batchSize = _batchSize
+        self.sloFactor = _sloFactor
+
+
 

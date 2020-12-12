@@ -16,7 +16,7 @@ class InferExecutor(Executor):
     # Usage stats for controller. Helps with LRU
     usage: Dict[str, int]
 
-    def __init__(self, _workerId: int, _requestQueue: PriorityQueue[Tuple[int, Action, int]], _resource: Resource, _models: Dict[str, Function]):
+    def __init__(self, _workerId: int, _requestQueue: PriorityQueue, _resource: Resource, _models: Dict[str, Function]):
         super().__init__(f"Worker:{_workerId}:InferExecutor", _requestQueue)
         self.workerId = _workerId
         self.resource = _resource

@@ -7,10 +7,13 @@ from simulator.system import System
 from workloads.toy.linear_dag import linear_dag
 from workloads.toy.branch_dag import branch_dag
 
+
 class SimpleSystem(System):
+	pools: Dict[str, ResourcePool]
 
 	def __init__(self,_events: EventQueue, _pools: Dict[str, ResourcePool]):
-		super().__init__(_events, _pools)
+		super().__init__(_events)
+		self.pools = _pools
 
 	def schedule(self, curr_time, events, *args, **kwargs):
 		# First check for any completed functions

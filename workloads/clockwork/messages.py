@@ -54,11 +54,35 @@ class InferenceRequest:
     modelName: str
     batchSize: int
     sloFactor: int
+    uniqueId: int
+    arrived: int
 
-    def __init__(self, _modelName: str, _batchSize: int, _sloFactor: int):
+    def __init__(self, _modelName: str, _batchSize: int, _sloFactor: int, _uniqueId: int):
         self.modelName = _modelName
         self.batchSize = _batchSize
         self.sloFactor = _sloFactor
+        self.uniqueId = _uniqueId
+        self.arrived = 0
+
+    def set_arrival_time(self, time: int):
+        self.arrived = time
 
 
+class InferenceResponse:
+    modelName: str
+    batchSize: int
+    sloFactor: int
+    uniqueId: int
+    arrived: int
+    completed: int
 
+    def __init__(self, _modelName: str, _batchSize: int, _sloFactor: int, _uniqueId: int, _arrived: int, _completed: int):
+        self.modelName = _modelName
+        self.batchSize = _batchSize
+        self.sloFactor = _sloFactor
+        self.uniqueId = _uniqueId
+        self.arrived = _arrived
+        self.completed = _completed
+
+    def satisfied_slo(self) -> bool:
+        return self.arrived - self.completed <= self.sloFactor

@@ -1,6 +1,6 @@
 from .clockwork_controller import ClockworkController
 from .clockwork_worker import ClockworkWorker
-from .messages import InferenceRequest
+from .messages import InferenceRequest, InferenceResponse
 
 from simulator.event_queue import EventQueue
 from simulator.system import System
@@ -16,6 +16,12 @@ class Clockwork(System):
     workers: Dict[int, ClockworkWorker]
     controller: ClockworkController
 
+    # Logging state
+    numReqIssued: int
+    numRespRecv: int
+    numSLOSat: int
+    numSLONotSat: int
+
     # Temp
     minute: int
 
@@ -28,6 +34,12 @@ class Clockwork(System):
         # Instantiate controller
         self.controller = ClockworkController(self.workers)
         self.minute = -1
+
+        # Logging state
+        self.numReqIssued = 0
+        self.numRespRecv = 0
+        self.numSLOSat = 0
+        self.numSLONotSat = 0
 
     def step(self, reqs: List[InferenceRequest]):
         resps = self.controller.step(reqs)
@@ -46,8 +58,9 @@ class Clockwork(System):
                 for (_, req) in requests:
                     assert isinstance(req, InferenceRequest)
                     controller_requests.append(req)
+            self.numReqIssued += len(controller_requests)
             controller_responses = self.step(controller_requests)
-            self.log(controller_responses)
+            self.log_responses(controller_responses)
 
             # Temp logging
             # TODO: Remove
@@ -57,7 +70,7 @@ class Clockwork(System):
 
         while self.controller.has_outstanding_requests():
             controller_responses = self.step([])
-            self.log(controller_responses)
+            self.log_responses(controller_responses)
 
             # Temp logging
             # TODO: Remove
@@ -66,10 +79,18 @@ class Clockwork(System):
                 print(f"Minute: {self.minute}")
 
         print(f"Execution finished at time: {self.clock}ms")
+        print(f"Requests Issued: {self.numReqIssued}")
+        print(f"Responses Received: {self.numRespRecv}")
+        print(f"Number of SLOs satisfied: {self.numSLOSat}")
+        print(f"Number of SLOs violated: {self.numSLONotSat}")
 
     def schedule(self, curr_time, events, *args, **kwargs):
         raise NotImplementedError("Schedule abstraction looks different for Clockwork")
 
-    def log(self, events: List):
-        # TODO: Implement any logging logic here
-        pass
+    def log_responses(self, responses: List[InferenceResponse]):
+        self.numRespRecv += len(responses)
+        for resp in responses:
+            if resp.satisfied_slo():
+                self.numSLOSat += 1
+            else:
+                self.numSLONotSat += 1

@@ -43,14 +43,15 @@ class ClockworkWorker:
     def __init__(self, _workerId: int):
         self.workerId = _workerId
         self.clock = 0
+        self.cache = {}
         self.resource = Resource('NVIDIA_TESLA_V100_GPU', ResourceType.GPU)
         self.models = deepcopy(model_zoo)
         self.loadRequestQueue = PriorityQueue()
         self.inferRequestQueue = PriorityQueue()
         self.unloadRequestQueue = PriorityQueue()
-        self.loadExecutor = LoadExecutor(self.workerId, self.loadRequestQueue, self.resource, self.models)
-        self.inferExecutor = InferExecutor(self.workerId, self.inferRequestQueue, self.resource, self.models)
-        self.unloadExecutor = UnloadExecutor(self.workerId, self.unloadRequestQueue, self.resource, self.models)
+        self.loadExecutor = LoadExecutor(self.workerId, self.loadRequestQueue, self.resource, self.models, self.cache)
+        self.inferExecutor = InferExecutor(self.workerId, self.inferRequestQueue, self.resource, self.models, self.cache)
+        self.unloadExecutor = UnloadExecutor(self.workerId, self.unloadRequestQueue, self.resource, self.models, self.cache)
 
         # Reserve space for IOCache and WorkSpace
         self.resource.reserve_space(512.0 / (32.0 * 1024))  # 512MB out of 32GB

@@ -12,23 +12,15 @@ class InferExecutor(Executor):
     resource: Resource
     models: Dict[str, Function]
     actionRecieved: int  # When was the current action received
+    cache: Dict[str, int]
 
-    # Usage stats for controller. Helps with LRU
-    usage: Dict[str, int]
-
-    def __init__(self, _workerId: int, _requestQueue: PriorityQueue, _resource: Resource, _models: Dict[str, Function]):
+    def __init__(self, _workerId: int, _requestQueue: PriorityQueue, _resource: Resource, _models: Dict[str, Function], _cache: Dict[str, int]):
         super().__init__(f"Worker:{_workerId}:InferExecutor", _requestQueue)
         self.workerId = _workerId
         self.resource = _resource
         self.models = _models
         self.actionRecieved = -1
-        self.usage = {modelName: -1 for modelName, _ in self.models.items()}
-
-    def get_usage_stats(self):
-        return self.usage
-
-    def get_lru_model_name(self) -> str:
-        return min(self.usage, key=self.usage.get)
+        self.cache = _cache
 
     # Process INFER actions and send back responses
     def step(self) -> List[Result]:
@@ -61,7 +53,7 @@ class InferExecutor(Executor):
                         self.currentAction = action
                         self.actionRecieved = recv
                         self.timeLeft = model.resources[self.resource.name][action.batchKey]
-                        self.usage[action.modelName] = self.clock
+                        self.cache[action.modelName] = self.clock
                         break
                 else:
                     break

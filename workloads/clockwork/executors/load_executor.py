@@ -12,13 +12,15 @@ class LoadExecutor(Executor):
     resource: Resource
     models: Dict[str, Function]
     actionRecieved: int  # When was the current action received
+    cache: Dict[str, int]
 
-    def __init__(self, _workerId: int, _requestQueue: PriorityQueue, _resource: Resource, _models: Dict[str, Function]):
+    def __init__(self, _workerId: int, _requestQueue: PriorityQueue, _resource: Resource, _models: Dict[str, Function], _cache: Dict[str, int]):
         super().__init__(f"Worker:{_workerId}:LoadExecutor", _requestQueue)
         self.workerId = _workerId
         self.resource = _resource
         self.models = _models
         self.actionRecieved = -1
+        self.cache = _cache
 
     # Process UNLOAD actions and send back responses
     def step(self) -> List[Result]:
@@ -53,6 +55,7 @@ class LoadExecutor(Executor):
                             self.currentAction = action
                             self.actionRecieved = recv
                             self.timeLeft = model.resources[self.resource.name]['pre']
+                            self.cache[action.modelName] = -1
                             break
                         else:
                             responses.append(

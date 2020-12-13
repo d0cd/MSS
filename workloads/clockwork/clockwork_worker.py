@@ -16,6 +16,8 @@ from typing import List, Tuple, Any, Dict
 #     and Clockwork has access to 10GB/s Ethernet. This assumption is fine since we are not measuring real time performance
 #     rather we are evaluating scheduling algorithms for the executing resources which dominates most of the runtime.
 #   - For simplicity, each Worker is given one GPU
+#   - If this code was turned into an actual implementation, there would be so many concurrency bugs. That's why we
+#     like simulations :)
 
 # TODO:
 #   - Make executors explicitly manage resources. ATM the management logic is handled in the execute functions
@@ -25,6 +27,7 @@ class ClockworkWorker:
     clock: int
     resource: Resource
     models: Dict[str, Function]
+    cache: Dict[str, Function]
 
     # Each worker runs a dedicated executor for each action type
     # Each executor is pinned to a core so they can all run concurrently
@@ -74,11 +77,9 @@ class ClockworkWorker:
         else:
             raise AssertionError(f"Action type: {action.type} is not explicitly allowed.")
 
-    def get_usage_stats(self):
-        return self.inferExecutor.get_usage_stats()
+    def get_lru_model_name(self) -> str:
+        return min(self.cache, key=self.usage.get)
 
-    def get_lru_model_name(self):
-        return self.inferExecutor.get_lru_model_name()
 
 
 

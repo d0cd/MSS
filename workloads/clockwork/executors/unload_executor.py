@@ -11,12 +11,14 @@ class UnloadExecutor(Executor):
     workerId: int
     resource: Resource
     models: Dict[str, Function]
+    cache: Dict[str, int]
 
-    def __init__(self, _workerId: int, _requestQueue: PriorityQueue, _resource: Resource, _models: Dict[str, Function]):
+    def __init__(self, _workerId: int, _requestQueue: PriorityQueue, _resource: Resource, _models: Dict[str, Function], _cache: Dict[str, int]):
         super().__init__(f"Worker:{_workerId}:UnloadExecutor", _requestQueue)
         self.workerId = _workerId
         self.resource = _resource
         self.models = _models
+        self.cache = Dict[str, int]
 
     # Unload executor is always free to do work if there is any avaliable
     def is_free(self) -> bool:
@@ -42,6 +44,8 @@ class UnloadExecutor(Executor):
                 model = self.models[action.modelName]
                 if self.resource.is_allocated(model, tag=None):
                     self.resource.remove_function(model, tag=None, curr_time=self.clock)
+                    assert action.modelName in self.cache, "Model should be cached because its on this resource"
+                    self.cache.pop(action.modelName)
                     responses.append(
                         Result(
                             Code.Success,

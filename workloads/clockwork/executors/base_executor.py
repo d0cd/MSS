@@ -1,8 +1,8 @@
-from ..messages import Action
+from ..messages import Action, Message
 
-from queue import PriorityQueue
+from queue import PriorityQueue, Queue
 from simulator.resource import Resource
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 
 class Executor:
@@ -12,9 +12,18 @@ class Executor:
     timeLeft: int
     currentAction: Optional[Action]
 
-    def __init__(self, _name: str, _requestQueue: PriorityQueue):
+    # Messaging
+    inbox_worker: "Queue[Message]"  # Incoming messages from Worker
+    outbox_worker: "Queue[Message]" # Outgoing messages to Worker
+    inbox_worker_buf: List[Message]
+    outbox_worker_buf: List[Message]
+
+    def __init__(self, _name: str, _inbox_worker: "Queue[Message]", _outbox_worker: "Queue[Message]"):
         self.name = _name
-        self.requestQueue = _requestQueue
+        self.inbox_worker = _inbox_worker
+        self.outbox_worker = _outbox_worker
+        self.outbox_worker_buf = []
+        self.requestQueue = PriorityQueue()
         self.clock = 0
         self.timeLeft = 0
         self.currentAction = None
@@ -24,4 +33,18 @@ class Executor:
         return self.timeLeft == 0
 
     def step(self):
-        raise NotImplementedError("Base executor cannot be stepped.")
+        self.clock += 1
+
+    def input(self):
+        while not self.inbox_worker.empty():
+            msg = self.inbox_worker.get()
+            assert isinstance(msg, Action)
+            self.requestQueue.put((msg.earliest, msg))
+
+    def exec(self):
+        raise NotImplementedError("Base executor cannot execute")
+
+    def output(self):
+        for msg in self.outbox_worker_buf:
+            self.outbox_worker.put(msg)
+        self.outbox_worker_buf.clear()

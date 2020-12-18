@@ -135,6 +135,15 @@ class ClockworkWorker:
         for action in self.inbox_controller_buf:
             self.add_action(action)
         self.inbox_controller_buf.clear()
+        for msg in self.inbox_load_buf:
+            self.outbox_controller_buf.append(msg)
+        self.inbox_load_buf.clear()
+        for msg in self.inbox_infer_buf:
+            self.outbox_controller_buf.append(msg)
+        self.inbox_infer_buf.clear()
+        for msg in self.inbox_unload_buf:
+            self.outbox_controller_buf.append(msg)
+        self.inbox_unload_buf.clear()
 
     def add_action(self, action: Action):
         assert(action.id[1] in self.models, f"Model: {action.id[1]} does not exist on this worker")  # Referenced model must exist on this worker

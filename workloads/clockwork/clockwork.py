@@ -1,6 +1,5 @@
 from .clockwork_controller import ClockworkController
-from .clockwork_worker import ClockworkWorker
-from .messages import InferenceRequest, InferenceResponse, Message
+from .messages import InferenceRequest, InferenceResponse, Message, Code
 from .schedulers.base_scheduler import SchedulerType
 
 from simulator.event_queue import EventQueue
@@ -28,6 +27,7 @@ class Clockwork(System):
     numRespRecv: int
     numSLOSat: int
     numSLONotSat: int
+    numErrors: int
 
     # Temp
     minute: int
@@ -48,11 +48,13 @@ class Clockwork(System):
         self.numRespRecv = 0
         self.numSLOSat = 0
         self.numSLONotSat = 0
+        self.numErrors = 0
 
     def step(self):
         if self.clock % 60000 == 0:
             print(f"Minute: {self.clock // 60000 }")
         self.controller.step()
+        print(f"Clock: {self.clock}")
         self.clock += 1
 
     # This stage gets messages back from the controllers, so do logging here
@@ -60,7 +62,7 @@ class Clockwork(System):
         self.controller.input()
         resps = []
         while not self.inbox_controller.empty():
-            resps.append(self.inbox_controller.get_nowait())
+            resps.append(self.inbox_controller.get())
         self.log_responses(resps)
 
     def exec(self):
@@ -89,6 +91,7 @@ class Clockwork(System):
             self.exec()
             self.output()
             self.step()
+            if self.clock == 10000: break
         end_time = datetime.now()
         simulation_time = self.clock / 1000
         real_time = (end_time - start_time).total_seconds()
@@ -106,7 +109,9 @@ class Clockwork(System):
     def log_responses(self, responses: List[InferenceResponse]):
         self.numRespRecv += len(responses)
         for resp in responses:
-            if resp.satisfied_slo():
+            if resp.code == Code.Success:
                 self.numSLOSat += 1
+            elif resp.code == Code.Error:
+                self.numErrors += 1
             else:
                 self.numSLONotSat += 1

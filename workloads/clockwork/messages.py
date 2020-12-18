@@ -42,6 +42,7 @@ class Action(Message):
 class Code(Enum):
     Success = 1
     Error = 2
+    CannotMeetSLO = 3
 
 
 class Executor(Enum):
@@ -89,15 +90,15 @@ class InferenceResponse(Message):
     sloFactor: int
     uniqueId: int
     arrived: int
+    code: Code
     completed: int
 
-    def __init__(self, _modelName: str, _batchSize: int, _sloFactor: int, _uniqueId: int, _arrived: int, _completed: int):
+    def __init__(self, _modelName: str, _batchSize: int, _sloFactor: int, _uniqueId: int, _arrived: int, _code: Code, _completed: int):
         self.modelName = _modelName
         self.batchSize = _batchSize
         self.sloFactor = _sloFactor
         self.uniqueId = _uniqueId
         self.arrived = _arrived
+        self.code = _code
         self.completed = _completed
 
-    def satisfied_slo(self) -> bool:
-        return self.arrived - self.completed <= self.sloFactor

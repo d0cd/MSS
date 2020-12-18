@@ -1,6 +1,11 @@
 from enum import Enum
 
 
+class Message:
+    def __init__(self):
+        raise NotImplementedError("Message cannot be instantiated")
+
+
 class ActionType(Enum):
     LOAD = 1
     INFER = 2
@@ -12,20 +17,24 @@ class ActionType(Enum):
     OUTPUT = 6
 
 
-class Action:
+class Action(Message):
+    workerId: int
     modelName: str
     reqId: int
     type: ActionType
     earliest: int
     latest: int
+    received: int
     batchKey: str
 
-    def __init__(self, _modelName: str, _reqId: int, _type: ActionType, _earliest: int, _latest: int, _batchKey: str):
+    def __init__(self, _workerId: int, _modelName: str, _reqId: int, _type: ActionType, _earliest: int, _latest: int, _batchKey: str):
+        self.workerId = _workerId
         self.modelName = _modelName
         self.reqId = _reqId
         self.type = _type
         self.earliest = _earliest
         self.latest = _latest
+        self.received = -1
         self.batchKey = _batchKey
 
 
@@ -35,7 +44,13 @@ class Code(Enum):
     Error = 2
 
 
-class Result:
+class Executor(Enum):
+    Load = 1
+    Infer = 2
+    Unload = 3
+
+
+class Result(Message):
     code: Code
     action: Action
     actionReceived: int
@@ -50,7 +65,7 @@ class Result:
         self.message = _msg
 
 
-class InferenceRequest:
+class InferenceRequest(Message):
     modelName: str
     batchSize: int
     sloFactor: int
@@ -68,7 +83,7 @@ class InferenceRequest:
         self.arrived = time
 
 
-class InferenceResponse:
+class InferenceResponse(Message):
     modelName: str
     batchSize: int
     sloFactor: int

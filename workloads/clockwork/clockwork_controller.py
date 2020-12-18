@@ -1,11 +1,10 @@
 from .clockwork_models import model_zoo
 from .clockwork_worker import ClockworkWorker
-from .messages import InferenceRequest, InferenceResponse
+from .messages import InferenceRequest, InferenceResponse, Message, Action, Result
 from .performance_profile import PerformanceProfile
+from .schedulers.base_scheduler import Scheduler, SchedulerType
 
-from simulator import Resource
-
-from typing import Dict, List
+from typing import Dict, List, Union
 from queue import Queue, PriorityQueue
 
 
@@ -26,10 +25,42 @@ class ClockworkController:
     modelRequestQueues: Dict[str, Queue]
     batchRequestQueues: Dict[str, Dict[int, Queue]]
     performanceProfiles: Dict[int, PerformanceProfile]
+    scheduler: Scheduler
 
-    def __init__(self, _workers: Dict[int, ClockworkWorker]):
-        self.workers = _workers
+    # Messaging
+    inbox_clockwork: "Queue[Message]"   # Incoming messages from Clockwork
+    outbox_clockwork: "Queue[Message]"  # Outgoing messages to Clockwork
+    inbox_workers: Dict[int, "Queue[Message]"]
+    outbox_workers: Dict[int, "Queue[Message]"]
+
+    inbox_clockwork_buf: List[Message]
+    outbox_clockwork_buf: List[Message]
+    inbox_workers_buf: Dict[int, List[Message]]
+    outbox_workers_buf: Dict[int, List[Message]]
+
+    def __init__(self, _inbox_clockwork: "Queue[Message]", _outbox_clockwork: "Queue[Message]", num_workers: int, _schedulerType: SchedulerType):
+        self.workers = {}
+        self.inbox_workers, self.inbox_workers_buf = {}, {}
+        self.outbox_workers, self.outbox_workers_buf = {}, {}
+        for i in range(num_workers):
+            # Instantiate workers and messaging
+            inbox_worker_i = Queue()
+            outbox_worker_i = Queue()
+            self.workers[i] = ClockworkWorker(i, outbox_worker_i, inbox_worker_i)
+            self.inbox_workers[i] = inbox_worker_i
+            self.inbox_workers_buf[i] = []
+            self.outbox_workers[i] = outbox_worker_i
+            self.outbox_workers_buf[i] = []
+        self.inbox_clockwork = _inbox_clockwork
+        self.outbox_clockwork = _outbox_clockwork
+        self.inbox_clockwork_buf = []
+        self.outbox_clockwork_buf = []
         self.clock = 0
+
+        # TODO: Initialize schedulers here
+
+
+
         self.performanceProfiles = {}
         self.globalRequestQueue = PriorityQueue()
 
@@ -37,9 +68,9 @@ class ClockworkController:
         for id, worker in self.workers.items():
             profile = PerformanceProfile(
                 worker.cache,
-                worker.loadRequestQueue,
-                worker.inferRequestQueue,
-                worker.unloadRequestQueue
+                worker.loadExecutor.requestQueue,
+                worker.inferExecutor.requestQueue,
+                worker.unloadExecutor.requestQueue
             )
             self.performanceProfiles[id] = profile
 
@@ -56,17 +87,60 @@ class ClockworkController:
                 16: Queue()
             }
 
+    def step(self):
+        for worker in self.workers.values():
+            worker.step()
+        self.clock += 1
+        return []
+
+    def input(self):
+        for worker in self.workers.values():
+            worker.input()
+        while not self.inbox_clockwork.empty():
+            self.inbox_clockwork_buf.append(self.inbox_clockwork.get_nowait())
+        for worker_id, inbox in self.inbox_workers.items():
+            while not inbox.empty():
+                self.inbox_workers_buf[worker_id].append(inbox.get_nowait())
+
     # The SimpleScheduler does the following:
     # (1) If a model exists on multiple workers GPUs, assigns requests to workers round-robin
     # (2) If a model isn't on any worker GPUs, selects a worker, round-robin, to load the GPU
     # (3) Workers execute requests FIFO
     # (4) Controller does not batch requests to the same model
     # (5) Controller only forwards 3 requests at a time to a worker
+    def exec(self):
+        def dispatch_order(order: Union[InferenceResponse, Action]):
+            if isinstance(order, Action):
+                self.outbox_workers_buf[order.workerId].append(order)
+            else:
+                assert isinstance(order, InferenceResponse)
+                self.outbox_clockwork_buf.append(order)
 
-    def step(self, requests: List[InferenceRequest]) -> List[InferenceResponse]:
-        #self._add_requests_to_batch_queues(requests)
-        self.clock += 1
-        return []
+        for worker in self.workers.values():
+            worker.exec()
+        for msg in self.inbox_clockwork_buf:
+            assert isinstance(msg, InferenceRequest)
+            order = self.scheduler.on_request(msg)
+            dispatch_order(order)
+        self.inbox_workers_buf.clear()
+
+        for worker_id, buf in self.inbox_workers_buf.items():
+            for msg in buf:
+                assert isinstance(msg, Result)
+                order = self.scheduler.on_request(msg)
+                dispatch_order(order)
+            buf.clear()
+
+    def output(self):
+        for worker in self.workers.values():
+            worker.output()
+        for msg in self.outbox_clockwork_buf:
+            self.outbox_clockwork.put(msg)
+        self.outbox_clockwork_buf.clear()
+        for worker_id, outbox_buf in self.outbox_workers_buf.items():
+            for msg in outbox_buf:
+                self.outbox_workers[worker_id].put(msg)
+            outbox_buf.clear()
 
     def on_request(self):
         pass

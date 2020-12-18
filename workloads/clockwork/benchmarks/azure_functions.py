@@ -36,7 +36,7 @@ def azure_bench_1(path_to_invocations) -> EventQueue:
     model_names = list(sorted(model_zoo.keys()))
     for (name, invocs) in zip(model_names, selected_invocs.itertuples()):
         # Slice out an 8hr section of the trace
-        eight_hr_invocs = invocs[5:35]  # Temporarily set lower
+        eight_hr_invocs = invocs[5:10]  # Temporarily set lower
         event_queue_invocs = []
         for (i, invs) in enumerate(eight_hr_invocs):
             # Uniformly distribute invocations across 1 min interval

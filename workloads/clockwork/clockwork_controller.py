@@ -131,6 +131,9 @@ class ClockworkController:
                 dispatch_order(order)
             buf.clear()
 
+        for order in self.scheduler.step():
+            dispatch_order(order)
+
     def output(self):
         for worker in self.workers.values():
             worker.output()

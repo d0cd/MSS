@@ -1,6 +1,7 @@
 from simulator.dag import Dag, Function
 from simulator.resource import ResourceType
 from simulator.runtime import ConstantTime
+from .constants import *
 
 branch_front = Function(
 	unique_id='branch_front',
@@ -63,6 +64,15 @@ branch_back = Function(     # This function takes a long time to run on a GPU
 		}
 	}
 )
+
+# Add costs to functions
+all_funs = [branch_front] + branch_middles + [branch_back]
+for f in all_funs:
+	for rsrc_name, specs in f.resources.items():
+		if rsrc_name == 'STD_CPU':
+			specs['cost'] = COST_PER_CPU_TIME * specs['exec'].get_runtime()
+		else:
+			specs['cost'] = COST_PER_GPU_TIME * specs['exec'].get_runtime()
 
 branch_dag = Dag('branch', funs=[branch_front] + branch_middles + [branch_back])
 for branch_middle in branch_middles:

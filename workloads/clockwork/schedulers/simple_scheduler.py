@@ -1,6 +1,7 @@
 from .base_scheduler import Scheduler
 from ..messages import InferenceRequest, InferenceResponse, Code, Action, Result, ActionType
 from ..clockwork_models import model_zoo
+from ..clockwork_worker import ClockworkWorker
 
 from typing import Dict, Union, List, Optional, Tuple
 from queue import PriorityQueue
@@ -21,11 +22,14 @@ class SimpleScheduler(Scheduler):
     clock: int
     executingRequests: Dict[int, InferenceRequest]  # All currently executing inference requests
     globalRequestQueue: PriorityQueue
+    workers: Dict[int, ClockworkWorker]
 
-    def __init__(self):
+
+    def __init__(self, _workers: Dict[int, ClockworkWorker]):
         super().__init__()
         self.executingRequests = {}
         self.globalRequestQueue = PriorityQueue()
+        self.workers = _workers
 
     def on_request(self, req: InferenceRequest) -> Optional[Union[InferenceResponse, Action]]:
         req.arrived = self.clock
@@ -96,7 +100,7 @@ class SimpleScheduler(Scheduler):
     def admit_request(self, req: InferenceRequest) -> Optional[InferenceResponse]:
         if req.modelName not in self.models or req.batchSize not in self.batch_sizes:
             return InferenceResponse(req.modelName, req.batchSize, req.sloFactor, req.uniqueId, req.arrived, Code.Error, self.clock)
-        if self.estimate_execution_time(req) > req.sloFactor:
+        if self.estimate_execution_time(req, self.) > req.sloFactor:
             return InferenceResponse(req.modelName, req.batchSize, req.sloFactor, req.uniqueId, req.arrived, Code.CannotMeetSLO, self.clock)
         self.globalRequestQueue.put((self.clock + req.sloFactor), req)
 
@@ -104,13 +108,21 @@ class SimpleScheduler(Scheduler):
     def check_availability(self, modelName: str) -> Tuple[List[int], List[int], List[int]]:
         return False
 
+    def is_loaded(self, modelName: str) -> bool:
+        return False
+
     # TODO: Purge reqId from all scheduler state
     def remove_request(self, reqId: int):
         pass
 
     # TODO: Estimate should be made based on worker state
-    def estimate_execution_time(self, req: InferenceRequest) -> int:
-        return 1000000000
+    def estimate_execution_time(self, req: InferenceRequest, isLoaded: bool) -> int:
+        resource = self.models[req.modelName].resources['NVIDIA_TESLA_V100_GPU']
+        assert f"exec_b{req.batchSize}" in resource, "Batch execution times should be in model specification"
+        estimate = resource[f"exec_b{req.bar}"]
+        if not isLoaded:
+            estimate += resource['pre']
+        return estimate
 
     def has_outstanding_requests(self) -> bool:
         return len(self.executingRequests) > 0 or not self.globalRequestQueue.empty()

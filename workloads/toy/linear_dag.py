@@ -1,6 +1,7 @@
 from simulator.dag import Dag, Function
 from simulator.resource import ResourceType
 from simulator.runtime import ConstantTime
+from .constants import *
 
 linear_first = Function(
 	unique_id='linear_first',
@@ -61,6 +62,16 @@ linear_third = Function(     # This function takes a long time to run on a GPU
 		}
 	}
 )
+
+# Add costs to functions
+all_funs = [linear_first, linear_second, linear_third]
+for f in all_funs:
+	for rsrc_name, specs in f.resources.items():
+		if rsrc_name == 'STD_CPU':
+			specs['cost'] = COST_PER_CPU_TIME * specs['exec'].get_runtime()
+		else:
+			specs['cost'] = COST_PER_GPU_TIME * specs['exec'].get_runtime()
+
 
 linear_dag = Dag('linear', funs=[linear_first, linear_second, linear_third])
 linear_dag.add_edge(linear_first, linear_second)

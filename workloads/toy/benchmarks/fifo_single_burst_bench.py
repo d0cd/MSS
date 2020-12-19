@@ -9,7 +9,7 @@ cpu_pool = ResourcePool("STD_CPU_POOL", ResourceType.CPU, [("STD_CPU_1", Resourc
 gpu_pool = ResourcePool("STD_GPU_POOL", ResourceType.GPU, [("STD_GPU_1", Resource("STD_GPU", ResourceType.GPU))])
 
 # Add DAGs here
-events, hist = gen_single_burst_bench(50, 50, time_in_ms=1200, number_of_requests=1200)
+events, all_req_times = gen_single_burst_bench(50, 50, time_in_ms=1200, number_of_requests=1200)
 
 system = FifoSystem(events,
 					  {

@@ -22,17 +22,15 @@ def assign_request_times_to_dags(dags: List[Dag], all_req_times: List[int], late
 
 def gen_uniform_bench(latency_slo, cost_slo, dags=[linear_dag], time_in_ms=600000, number_of_requests=60000) -> Tuple:
     all_req_times = np.linspace(0, time_in_ms, num=number_of_requests, endpoint=False, dtype=int)
-    hist = np.histogram(all_req_times, bins=100, range=(0.0, float(time_in_ms)))
-    return EventQueue(assign_request_times_to_dags(dags, all_req_times, latency_slo, cost_slo)), hist
+    return EventQueue(assign_request_times_to_dags(dags, all_req_times, latency_slo, cost_slo)), all_req_times
 
 
 # In first 1/10 of the interval, generate 1/2 requests, then evenly space out the rest
 def gen_single_burst_bench(latency_slo, cost_slo, dags=[linear_dag], time_in_ms=600000, number_of_requests=60000) -> Tuple:
     burst = np.linspace(0, time_in_ms/10, num=int(number_of_requests/2), endpoint=False, dtype=int)
     coast = np.linspace(time_in_ms/10, time_in_ms, num=int(number_of_requests/2), endpoint=False, dtype=int)
-    all_req_times = burst + coast
-    hist = np.histogram(all_req_times, bins=100, range=(0.0, float(time_in_ms)))
-    return EventQueue(assign_request_times_to_dags(dags, all_req_times, latency_slo, cost_slo)), hist
+    all_req_times = np.concatenate([burst, coast])
+    return EventQueue(assign_request_times_to_dags(dags, all_req_times, latency_slo, cost_slo)), all_req_times
 
 
 # Generate 10 pillars of high traffic
@@ -45,8 +43,7 @@ def gen_pillar_bench(latency_slo, cost_slo, dags=[linear_dag], time_in_ms=600000
         pillar = np.linspace(i * mult_factor + start_add_factor, i * mult_factor + stop_add_factor, num=int(number_of_requests/10), endpoint=False, dtype=int)
         all_pillars.append(pillar)
     all_req_times = np.concatenate(all_pillars)
-    hist = np.histogram(all_req_times, bins=100, range=(0.0, float(time_in_ms)))
-    return EventQueue(assign_request_times_to_dags(dags, all_req_times, latency_slo, cost_slo)), hist
+    return EventQueue(assign_request_times_to_dags(dags, all_req_times, latency_slo, cost_slo)), all_req_times
 
 
 

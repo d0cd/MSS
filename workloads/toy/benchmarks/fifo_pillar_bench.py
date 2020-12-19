@@ -9,7 +9,7 @@ cpu_pool = ResourcePool("STD_CPU_POOL", ResourceType.CPU, [("STD_CPU_1", Resourc
 gpu_pool = ResourcePool("STD_GPU_POOL", ResourceType.GPU, [("STD_GPU_1", Resource("STD_GPU", ResourceType.GPU))])
 
 # Add DAGs here
-events, hist = gen_pillar_bench(50, 50, time_in_ms=1200, number_of_requests=1200)
+events, all_req_times = gen_pillar_bench(50, 50, time_in_ms=5000, number_of_requests=5000)
 
 system = FifoSystem(events,
 					  {
@@ -19,6 +19,7 @@ system = FifoSystem(events,
 
 
 if __name__ == "__main__":
+
 	overall_latency = system.run()
 	print(f"Time all functions finished is: {overall_latency}")
 	total_requests = 0

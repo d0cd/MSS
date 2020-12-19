@@ -20,9 +20,11 @@ class System:
         raise NotImplementedError("Create a subclass and implement your secheduler in this function.")
 
     def run(self, *args, **kwargs) -> int:
+        print("Running system...")
         while self.events.has_more_events():
-            (invocations, absolute_time, elapsed_time) = self.events.get_next_event()
-            for _ in range(0, max(0, elapsed_time)):
+            (invocations, absolute_time, _) = self.events.get_next_event()
+            assert self.clock <= absolute_time
+            while self.clock < absolute_time:
                 self.schedule(self.clock, set(), *args, **kwargs)
                 self.clock += 1
             assert self.clock == absolute_time, "The time should have been accurately stepped to current time"

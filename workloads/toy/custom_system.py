@@ -4,7 +4,8 @@ from simulator.dag import Dag
 from simulator.system import System
 
 
-class IntelligentSystem(System):
+class CustomSystem(System):
+
 	pools: Dict[str, ResourcePool]
 	outstanding_requests: Dict[str, Tuple[bool, Dag, int, int, int, int]]  # flag, Dag, latency_slo, cost_slo, time_arrived, total_cost
 	logs: Dict[str, Tuple[bool, bool]] # latency_slo_met?, cost_slo_met?
